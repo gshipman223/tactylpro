@@ -1,0 +1,30 @@
+image:
+  file: .gitpod.Dockerfile
+
+ports:
+  - port: 5173
+    onOpen: open-preview
+    visibility: public
+  - port: 3030
+    onOpen: ignore
+    visibility: public
+
+tasks:
+  - name: bootstrap
+    init: |
+      # install root deps if present (not required)
+      [ -f package.json ] && (pnpm install || npm install) || true
+      mkdir -p app
+      echo '{"name":"app","private":true}' > app/package.json
+
+services:
+  - name: agent
+    command: |
+      cd agent
+      pnpm install || npm install
+      pnpm dev || npm run dev
+  - name: app
+    command: |
+      cd app
+      # If a project is generated, install and run it; otherwise keep the port reserved
+      ([ -f package.json ] && (pnpm install || npm install) && (pnpm dev || npm run dev)) || (echo "Waiting for project generation..." && sleep 360000)
