@@ -12,19 +12,18 @@ ports:
 tasks:
   - name: bootstrap
     init: |
-      # install root deps if present (not required)
+      # Install root deps if present
       [ -f package.json ] && (pnpm install || npm install) || true
       mkdir -p app
       echo '{"name":"app","private":true}' > app/package.json
-
-services:
-  - name: agent
     command: |
-      cd agent
-      pnpm install || npm install
-      pnpm dev || npm run dev
-  - name: app
-    command: |
-      cd app
-      # If a project is generated, install and run it; otherwise keep the port reserved
-      ([ -f package.json ] && (pnpm install || npm install) && (pnpm dev || npm run dev)) || (echo "Waiting for project generation..." && sleep 360000)
+      # Start agent in background
+      cd agent && (pnpm install || npm install) && pnpm dev &
+      # Start app dev server in background (wait until files exist)
+      cd ../app
+      if [ -f package.json ]; then
+        (pnpm install || npm install) && (pnpm dev || npm run dev) &
+      else
+        echo "Waiting for project generation..."
+      fi
+      wait
